@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8efe2;
+  --foreground: #2b1209;
+  --surface: #ffffff;
+  --surface-soft: #fff4df;
+  --primary: #991b1b;
+  --primary-dark: #7f1d1d;
+  --accent: #d97706;
+  --olive: #556b2f;
+  --muted: #6f5846;
+  --line: #e6d2b8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(153, 27, 27, 0.1), transparent 20rem),
+    radial-gradient(circle at 85% 18%, rgba(217, 119, 6, 0.12), transparent 24rem),
+    linear-gradient(180deg, #fffaf2 0%, var(--background) 48%, #efe0c7 100%);
+  color: var(--foreground);
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+body::selection {
+  background: rgba(153, 27, 27, 0.22);
+}
+
+img {
+  display: block;
+}
+
+@layer components {
+  .page-container {
+    @apply mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-12;
+  }
+
+  .card {
+    @apply rounded-lg border border-amber-900/10 bg-white/90 shadow-[0_16px_45px_rgba(43,18,9,0.08)] backdrop-blur transition duration-300 ease-out;
+  }
+
+  .card:hover {
+    @apply border-red-900/20 shadow-[0_22px_60px_rgba(43,18,9,0.13)];
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-red-800 px-5 py-3 font-semibold text-white shadow-lg shadow-red-950/15 transition duration-300 ease-out hover:-translate-y-0.5 hover:bg-red-900 hover:shadow-xl hover:shadow-red-950/20 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-amber-900/20 bg-white/85 px-5 py-3 font-semibold text-stone-800 shadow-sm transition duration-300 ease-out hover:-translate-y-0.5 hover:border-red-900/30 hover:bg-amber-50 hover:text-red-950 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 font-semibold text-white shadow-sm shadow-red-900/10 transition duration-300 hover:bg-red-700;
+  }
+
+  .btn-success {
+    @apply inline-flex items-center justify-center rounded-lg bg-emerald-600 px-5 py-3 font-semibold text-white shadow-lg shadow-emerald-900/15 transition duration-300 hover:bg-emerald-700;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-amber-900/15 bg-white/90 px-4 py-3 text-stone-900 outline-none transition duration-300 placeholder:text-stone-400 hover:border-amber-900/30 focus:border-red-800 focus:bg-white focus:ring-4 focus:ring-red-900/10;
+  }
+
+  .badge {
+    @apply inline-flex w-fit items-center rounded-full border border-red-900/15 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-red-900;
+  }
+
+  .badge-muted {
+    @apply inline-flex w-fit items-center rounded-full border border-stone-200 bg-stone-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-stone-600;
+  }
+
+  .section-title {
+    @apply text-3xl font-extrabold leading-tight text-stone-950 md:text-5xl;
+  }
+
+  .elevated-image {
+    @apply overflow-hidden rounded-lg border border-white/50 shadow-[0_28px_80px_rgba(43,18,9,0.18)];
+  }
+
+  .image-zoom {
+    @apply transition duration-700 ease-out;
+  }
+
+  .group:hover .image-zoom {
+    @apply scale-105;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fade-in 0.55s ease both;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .animate-soft-float {
+    animation: soft-float 7s ease-in-out infinite;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes soft-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

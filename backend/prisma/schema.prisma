@@ -1,0 +1,241 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  SELLER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  READY
+  DELIVERING
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String   @unique
+  password  String
+  phone     String?
+  city      String?
+  address   String?
+  profileImageUrl String?
+  role      Role     @default(CLIENT)
+  emailVerified Boolean @default(false)
+  emailVerificationToken String? @unique
+  emailVerificationExpires DateTime?
+  sellerSubscriptionStatus String @default("INACTIVE")
+  sellerSubscriptionExpiresAt DateTime?
+  sellerSubscriptionReference String?
+  sellerSubscriptionProof String?
+  sellerD17PhoneNumber String?
+  gmailSendEmail String?
+  gmailAccessToken String?
+  gmailRefreshToken String?
+  gmailTokenExpiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dishes    Dish[]
+  formations Formation[]
+  recipes   Recipe[]
+  orders    Order[]  @relation("ClientOrders")
+  reviews   Review[]
+  comments  Comment[]
+  notifications Notification[]
+  clientNotifications ClientNotification[]
+  supportTickets SupportTicket[] @relation("SupportRequester")
+  supportReplies SupportTicket[] @relation("SupportResponder")
+}
+
+model Category {
+  id      Int      @id @default(autoincrement())
+  name    String
+  type    String   @default("BOTH")
+  dishes  Dish[]
+  recipes Recipe[]
+}
+
+model Dish {
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String
+  price           Float
+  imageUrl        String?
+  quantity        Int      @default(1)
+  availability    Boolean  @default(true)
+  preparationTime Int?
+  city            String
+  allergens       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sellerId   Int
+  seller     User      @relation(fields: [sellerId], references: [id])
+  categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
+  reviews    Review[]
+}
+
+model Formation {
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String
+  price        Float
+  duration     String?
+  level        String?
+  imageUrl     String?
+  availability Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sellerId Int
+  seller   User @relation(fields: [sellerId], references: [id])
+
+  orderItems OrderItem[]
+}
+
+model Recipe {
+  id              Int      @id @default(autoincrement())
+  title           String
+  description     String
+  imageUrl        String?
+  ingredients     String
+  steps           String
+  preparationTime Int
+  cookingTime     Int?
+  difficulty      String
+  servings        Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id])
+  categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  comments   Comment[]
+}
+
+model Order {
+  id              Int         @id @default(autoincrement())
+  totalPrice      Float
+  customerFirstName String      @default("")
+  customerLastName  String      @default("")
+  customerEmail     String      @default("")
+  customerPhone     String      @default("")
+  status          OrderStatus @default(PENDING)
+  deliveryAddress String
+  deliveryCity    String      @default("")
+  deliveryFee     Float       @default(7)
+  paymentMethod   String      @default("CASH_ON_DELIVERY")
+  paymentStatus   String      @default("PENDING")
+  d17PhoneNumber   String?
+  d17TransferReference String?
+  d17TransferProof String?
+  sellerPaid      Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  clientId Int
+  client   User @relation("ClientOrders", fields: [clientId], references: [id])
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id])
+
+  dishId Int?
+  dish   Dish? @relation(fields: [dishId], references: [id])
+
+  formationId Int?
+  formation   Formation? @relation(fields: [formationId], references: [id])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  dishId Int
+  dish   Dish @relation(fields: [dishId], references: [id])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  recipeId Int
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  orderId   Int?
+  createdAt DateTime @default(now())
+
+  sellerId Int
+  seller   User @relation(fields: [sellerId], references: [id])
+}
+
+model ClientNotification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  orderId   Int?
+  createdAt DateTime @default(now())
+
+  clientId Int
+  client   User @relation(fields: [clientId], references: [id])
+}
+
+model SupportTicket {
+  id        Int      @id @default(autoincrement())
+  subject   String
+  message   String
+  reply     String?
+  status    String   @default("OPEN")
+  readByAdmin Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  repliedAt DateTime?
+
+  userId Int
+  user   User @relation("SupportRequester", fields: [userId], references: [id])
+
+  repliedById Int?
+  repliedBy   User? @relation("SupportResponder", fields: [repliedById], references: [id])
+}
