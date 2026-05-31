@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AuthResponse, saveSession } from "@/lib/auth";
+import { AuthResponse, getDashboardPath, saveSession } from "@/lib/auth";
 
 export default function GoogleCallbackPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function GoogleCallbackPage() {
       };
 
       saveSession(auth);
-      router.replace(auth.user.role === "SELLER" ? "/seller/dashboard" : "/");
+      router.replace(getDashboardPath(auth.user.role));
     } catch {
       setError("Session Google invalide.");
     }

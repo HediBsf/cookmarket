@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/lib/api";
-import { AuthResponse, isAuthenticated, saveSession } from "@/lib/auth";
+import { AuthResponse, getCurrentUser, getDashboardPath, isAuthenticated, saveSession } from "@/lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -17,7 +17,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      router.replace("/");
+      router.replace(getDashboardPath(getCurrentUser()?.role));
       return;
     }
 
@@ -46,7 +46,7 @@ export default function LoginPage() {
     try {
       const auth = await apiPost<AuthResponse>("/api/auth/login", { email, password });
       saveSession(auth);
-      router.push(auth.user.role === "SELLER" ? "/seller/dashboard" : "/");
+      router.push(getDashboardPath(auth.user.role));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connexion impossible.");
     } finally {

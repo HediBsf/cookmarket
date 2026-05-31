@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getUserRole, isAuthenticated, UserRole } from "@/lib/auth";
+import { getDashboardPath, getUserRole, isAuthenticated, UserRole } from "@/lib/auth";
 
 export default function ProtectedRoute({
   children,
@@ -23,7 +23,7 @@ export default function ProtectedRoute({
     if (allowedRoles) {
       const role = getUserRole();
       if (!role || !allowedRoles.includes(role)) {
-        router.replace(role === "SELLER" ? "/seller/dashboard" : "/");
+        router.replace(getDashboardPath(role));
         return;
       }
     }

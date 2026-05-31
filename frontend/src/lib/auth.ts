@@ -82,6 +82,16 @@ export function isSeller(): boolean {
   return getUserRole() === "SELLER";
 }
 
+export function getDashboardPath(role?: UserRole | null): string {
+  if (role === "ADMIN") {
+    return "/admin/dashboard";
+  }
+  if (role === "SELLER") {
+    return "/seller/dashboard";
+  }
+  return "/";
+}
+
 function getSessionStorage(): Storage {
   return window.sessionStorage;
 }
