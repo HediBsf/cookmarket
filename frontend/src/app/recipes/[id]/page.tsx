@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ChefHat, Clock, ListChecks, Users } from "lucide-react";
+import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 
 type RecipeDetail = {
   id: number;
@@ -21,7 +22,12 @@ type RecipeDetail = {
   createdAt?: string;
   user?: { id: number; firstName: string; lastName: string };
   category?: { id: number; name: string } | null;
-  comments?: { id: number; content: string; createdAt: string }[];
+  comments?: {
+    id: number;
+    content: string;
+    createdAt: string;
+    user?: { id: number; firstName: string; lastName: string };
+  }[];
 };
 
 function splitText(value: string) {
@@ -37,6 +43,9 @@ export default function RecipeDetailPage() {
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [comment, setComment] = useState("");
+  const [commentStatus, setCommentStatus] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   useEffect(() => {
     if (!params.id) {
@@ -60,6 +69,32 @@ export default function RecipeDetailPage() {
   const ingredients = useMemo(() => splitText(recipe?.ingredients ?? ""), [recipe?.ingredients]);
   const steps = useMemo(() => splitText(recipe?.steps ?? ""), [recipe?.steps]);
   const totalTime = (recipe?.preparationTime ?? 0) + (recipe?.cookingTime ?? 0);
+
+  async function handleCommentSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!recipe || !comment.trim()) {
+      return;
+    }
+
+    setSubmittingComment(true);
+    setCommentStatus("");
+    try {
+      const createdComment = await apiPost<NonNullable<RecipeDetail["comments"]>[number]>(
+        `/api/recipes/${recipe.id}/comments`,
+        { content: comment.trim() },
+      );
+      setRecipe({
+        ...recipe,
+        comments: [createdComment, ...(recipe.comments ?? [])],
+      });
+      setComment("");
+      setCommentStatus("Commentaire ajoute.");
+    } catch (err) {
+      setCommentStatus(err instanceof Error ? err.message : "Commentaire non enregistre.");
+    } finally {
+      setSubmittingComment(false);
+    }
+  }
 
   return (
     <ProtectedRoute allowedRoles={["CLIENT"]}>
@@ -157,18 +192,45 @@ export default function RecipeDetailPage() {
               </div>
             </section>
 
-            {recipe.comments && recipe.comments.length > 0 ? (
-              <section className="card mt-5 p-5">
-                <h2 className="text-xl font-bold">Commentaires</h2>
+            <section className="card mt-5 p-5">
+              <h2 className="text-xl font-bold">Commentaires des clients</h2>
+              <form onSubmit={handleCommentSubmit} className="mt-4 grid gap-3">
+                <textarea
+                  className="input min-h-28 resize-none"
+                  placeholder="Ajouter un commentaire sur cette recette..."
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value)}
+                  maxLength={500}
+                />
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className={`text-sm font-semibold ${commentStatus.includes("ajoute") ? "text-green-700" : "text-red-700"}`}>
+                    {commentStatus}
+                  </p>
+                  <button type="submit" className="btn-primary" disabled={submittingComment || !comment.trim()}>
+                    {submittingComment ? "Envoi..." : "Commenter la recette"}
+                  </button>
+                </div>
+              </form>
+
+              {recipe.comments && recipe.comments.length > 0 ? (
                 <div className="mt-3 grid gap-3">
                   {recipe.comments.map((comment) => (
-                    <p key={comment.id} className="rounded-lg bg-stone-50 p-4 text-sm text-stone-700">
-                      {comment.content}
-                    </p>
+                    <div key={comment.id} className="rounded-lg bg-stone-50 p-4 text-sm text-stone-700">
+                      {comment.user ? (
+                        <p className="mb-1 font-bold text-stone-900">
+                          {comment.user.firstName} {comment.user.lastName}
+                        </p>
+                      ) : null}
+                      <p>{comment.content}</p>
+                    </div>
                   ))}
                 </div>
-              </section>
-            ) : null}
+              ) : (
+                <p className="mt-4 rounded-lg bg-stone-50 p-4 text-sm text-stone-600">
+                  Aucun commentaire pour le moment.
+                </p>
+              )}
+            </section>
           </div>
         ) : null}
       </main>

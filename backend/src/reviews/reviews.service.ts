@@ -13,14 +13,15 @@ export class ReviewsService {
     return this.prisma.review.findUnique({ where: { id }, include: { user: true, dish: true } });
   }
 
-  create(data: any) {
+  create(data: any, userId: number) {
     return this.prisma.review.create({
       data: {
-        userId: Number(data.userId),
+        userId,
         dishId: Number(data.dishId),
         rating: Number(data.rating),
         comment: data.comment,
       },
+      include: { user: { select: { id: true, firstName: true, lastName: true } } },
     });
   }
 

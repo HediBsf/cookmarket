@@ -1,0 +1,62 @@
+---
+title: Architecture generale de la plateforme CookMarket
+---
+flowchart TB
+  subgraph Utilisateurs["Utilisateurs"]
+    Client["Client"]
+    Vendeur["Vendeur"]
+    Admin["Administrateur"]
+  end
+
+  subgraph Presentation["Couche presentation"]
+    Frontend["Application Web Next.js\nPages client, vendeur et admin"]
+    Navigateur["Navigateur Web"]
+  end
+
+  subgraph Backend["Couche backend"]
+    API["API NestJS REST\nPrefixe /api"]
+    Auth["Module Auth\nJWT, Google OAuth"]
+    Users["Module Users\nprofils, support, abonnement vendeur"]
+    Catalog["Modules Catalogue\nplats, recettes, formations"]
+    Orders["Module Orders\ncommandes, paiement D17, statuts"]
+    Notifications["Module Notifications\nclient et vendeur"]
+    AdminModule["Module Admin\nsupervision et support"]
+    AiModule["Module AI\nassistant client"]
+    Prisma["Prisma ORM"]
+  end
+
+  subgraph Persistence["Couche persistance"]
+    Database[("Base de donnees PostgreSQL\nutilisateurs, plats, recettes,\ncommandes, avis, notifications")]
+  end
+
+  subgraph Services["Services externes"]
+    Google["Google OAuth"]
+    Ollama["Ollama / Llama\nassistant IA"]
+    D17["D17\npreuve de paiement"]
+  end
+
+  Client --> Navigateur
+  Vendeur --> Navigateur
+  Admin --> Navigateur
+  Navigateur --> Frontend
+  Frontend -->|"requete HTTP / JSON"| API
+
+  API --> Auth
+  API --> Users
+  API --> Catalog
+  API --> Orders
+  API --> Notifications
+  API --> AdminModule
+  API --> AiModule
+
+  Auth --> Prisma
+  Users --> Prisma
+  Catalog --> Prisma
+  Orders --> Prisma
+  Notifications --> Prisma
+  AdminModule --> Prisma
+  Prisma --> Database
+
+  Auth <-->|"authentification"| Google
+  AiModule <-->|"chat IA"| Ollama
+  Orders -. "reference et preuve" .-> D17

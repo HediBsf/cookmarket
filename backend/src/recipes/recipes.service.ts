@@ -30,7 +30,27 @@ export class RecipesService {
   findOne(id: number) {
     return this.prisma.recipe.findUnique({
       where: { id },
-      include: { user: { select: { id: true, firstName: true, lastName: true } }, category: true, comments: true },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+        category: true,
+        comments: {
+          include: { user: { select: { id: true, firstName: true, lastName: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+  }
+
+  addComment(recipeId: number, userId: number, content: string) {
+    return this.prisma.comment.create({
+      data: {
+        recipeId,
+        userId,
+        content,
+      },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+      },
     });
   }
 

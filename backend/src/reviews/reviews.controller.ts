@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { AuthRequest } from '../auth/auth-request';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ReviewsService } from './reviews.service';
 
 @Controller('reviews')
@@ -15,9 +17,10 @@ export class ReviewsController {
     return this.service.findOne(Number(id));
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  create(@Body() body: any, @Req() req: AuthRequest) {
+    return this.service.create(body, req.user.id);
   }
 
   @Patch(':id')

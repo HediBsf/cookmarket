@@ -1,0 +1,33 @@
+---
+title: Diagramme de cas d'utilisation Administrateur - CookMarket
+---
+%%{init: {"flowchart": {"nodeSpacing": 20, "rankSpacing": 20, "curve": "linear"}}}%%
+flowchart TD
+  Admin(["Administrateur"])
+
+  subgraph Systeme["Plateforme CookMarket"]
+    direction TB
+    UC_DASHBOARD(["Consulter le tableau de bord"])
+    UC_USERS(["Gérer les utilisateurs"])
+    UC_VERIFY_USERS(["Vérifier les utilisateurs"])
+    UC_CONFIRM_SUB(["Confirmer les abonnements vendeur"])
+    UC_ADMIN_ORDERS(["Superviser les commandes"])
+    UC_ADMIN_CATALOG(["Superviser plats et formations"])
+    UC_ADMIN_SUPPORT(["Traiter les tickets support"])
+  end
+
+  Admin --> UC_DASHBOARD
+  Admin --> UC_USERS
+  Admin --> UC_VERIFY_USERS
+  Admin --> UC_CONFIRM_SUB
+  Admin --> UC_ADMIN_ORDERS
+  Admin --> UC_ADMIN_CATALOG
+  Admin --> UC_ADMIN_SUPPORT
+
+  classDef actor fill:#fff8dc,stroke:#946200,stroke-width:2px,color:#1f1f1f;
+  classDef usecase fill:#f4fbff,stroke:#1b6ca8,stroke-width:1.5px,color:#102a43;
+  classDef system fill:#ffffff,stroke:#6b7280,stroke-width:1.5px,color:#111827;
+
+  class Admin actor;
+  class UC_DASHBOARD,UC_USERS,UC_VERIFY_USERS,UC_CONFIRM_SUB,UC_ADMIN_ORDERS,UC_ADMIN_CATALOG,UC_ADMIN_SUPPORT usecase;
+  class Systeme system;
