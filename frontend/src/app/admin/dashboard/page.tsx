@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CheckCircle, ClipboardList, GraduationCap, RefreshCw, Soup, Trash2, Users } from "lucide-react";
+import { Bell, BookOpen, CheckCircle, ClipboardList, GraduationCap, RefreshCw, Soup, Trash2, Users } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { apiDelete, apiGet, apiPatch } from "@/lib/api";
 
-type Tab = "overview" | "users" | "orders" | "dishes" | "formations" | "support";
+type Tab = "overview" | "users" | "orders" | "dishes" | "formations" | "recipes" | "support";
 type Role = "CLIENT" | "SELLER" | "ADMIN";
 
 type Overview = {
@@ -51,6 +52,7 @@ type Dish = {
   price: number;
   city: string;
   availability: boolean;
+  imageUrl?: string | null;
   seller?: { firstName: string; lastName: string; email: string };
 };
 
@@ -60,7 +62,19 @@ type Formation = {
   price: number;
   level?: string | null;
   availability: boolean;
+  imageUrl?: string | null;
   seller?: { firstName: string; lastName: string; email: string };
+};
+
+type Recipe = {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl?: string | null;
+  difficulty?: string | null;
+  preparationTime?: number | null;
+  cookingTime?: number | null;
+  category?: { id: number; name: string; type: string } | null;
 };
 
 type LivePoint = {
@@ -90,8 +104,6 @@ type SupportTicket = {
   repliedBy?: { firstName: string; lastName: string; email: string } | null;
 };
 
-const roles: Role[] = ["CLIENT", "SELLER", "ADMIN"];
-
 export default function AdminDashboardPage() {
   const [tab, setTab] = useState<Tab>("overview");
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -99,6 +111,7 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [formations, setFormations] = useState<Formation[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [supportReplies, setSupportReplies] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
@@ -108,6 +121,10 @@ export default function AdminDashboardPage() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [dishSearch, setDishSearch] = useState("");
+  const [formationSearch, setFormationSearch] = useState("");
 
   async function loadData(options: { silent?: boolean } = {}) {
     if (options.silent) {
@@ -116,12 +133,13 @@ export default function AdminDashboardPage() {
       setLoading(true);
     }
     try {
-      const [overviewData, usersData, ordersData, dishesData, formationsData, notificationsData, supportData] = await Promise.all([
+      const [overviewData, usersData, ordersData, dishesData, formationsData, recipesData, notificationsData, supportData] = await Promise.all([
         apiGet<Overview>("/api/admin/overview"),
         apiGet<User[]>("/api/admin/users"),
         apiGet<Order[]>("/api/admin/orders"),
         apiGet<Dish[]>("/api/admin/dishes"),
         apiGet<Formation[]>("/api/admin/formations"),
+        apiGet<Recipe[]>("/api/recipes"),
         apiGet<AdminNotification[]>("/api/notifications/me"),
         apiGet<SupportTicket[]>("/api/admin/support"),
       ]);
@@ -130,6 +148,7 @@ export default function AdminDashboardPage() {
       setOrders(ordersData);
       setDishes(dishesData);
       setFormations(formationsData);
+      setRecipes(recipesData);
       setNotifications(notificationsData);
       setSupportTickets(supportData);
       setLastUpdatedAt(new Date());
@@ -151,12 +170,20 @@ export default function AdminDashboardPage() {
     return () => window.clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (requestedTab === "overview" || requestedTab === "users" || requestedTab === "orders" || requestedTab === "dishes" || requestedTab === "formations" || requestedTab === "recipes" || requestedTab === "support") {
+      setTab(requestedTab);
+    }
+  }, []);
+
   const tabs = useMemo(() => [
     ["overview", "Vue globale"],
     ["users", "Utilisateurs"],
     ["orders", "Commandes"],
     ["dishes", "Plats"],
     ["formations", "Formations"],
+    ["recipes", "Recettes"],
     ["support", "Aide"],
   ] as Array<[Tab, string]>, []);
 
@@ -172,6 +199,113 @@ export default function AdminDashboardPage() {
     () => supportTickets.filter((ticket) => ticket.status !== "ANSWERED"),
     [supportTickets],
   );
+  const userNameOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(users.map((user) => `${user.firstName} ${user.lastName}`.trim()).filter(Boolean)),
+      ).sort((a, b) => a.localeCompare(b, "fr")),
+    [users],
+  );
+  const filteredUsers = useMemo(() => {
+    const search = userSearch.trim().toLowerCase();
+    return users.filter((user) => {
+      const haystack = [
+        user.firstName,
+        user.lastName,
+        `${user.firstName} ${user.lastName}`,
+        user.email,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return !search || haystack.includes(search);
+    });
+  }, [users, userSearch]);
+  const orderClientOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          orders
+            .map((order) => `${order.client?.firstName ?? ""} ${order.client?.lastName ?? ""}`.trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "fr")),
+    [orders],
+  );
+  const dishSellerOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          dishes
+            .map((dish) => `${dish.seller?.firstName ?? ""} ${dish.seller?.lastName ?? ""}`.trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "fr")),
+    [dishes],
+  );
+  const formationSellerOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          formations
+            .map((formation) => `${formation.seller?.firstName ?? ""} ${formation.seller?.lastName ?? ""}`.trim())
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "fr")),
+    [formations],
+  );
+  const filteredOrders = useMemo(() => {
+    const search = orderSearch.trim().toLowerCase();
+    return orders.filter((order) => {
+      const clientName = `${order.client?.firstName ?? ""} ${order.client?.lastName ?? ""}`.trim();
+      const haystack = [
+        `commande ${order.id}`,
+        clientName,
+        order.client?.firstName,
+        order.client?.lastName,
+        order.client?.email,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch = !search || haystack.includes(search);
+      return matchesSearch;
+    });
+  }, [orders, orderSearch]);
+  const filteredDishes = useMemo(() => {
+    const search = dishSearch.trim().toLowerCase();
+    return dishes.filter((dish) => {
+      const haystack = [
+        dish.name,
+        dish.city,
+        dish.seller?.firstName,
+        dish.seller?.lastName,
+        dish.seller?.email,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch = !search || haystack.includes(search);
+      return matchesSearch;
+    });
+  }, [dishes, dishSearch]);
+  const filteredFormations = useMemo(() => {
+    const search = formationSearch.trim().toLowerCase();
+    return formations.filter((formation) => {
+      const haystack = [
+        formation.title,
+        formation.level,
+        formation.seller?.firstName,
+        formation.seller?.lastName,
+        formation.seller?.email,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch = !search || haystack.includes(search);
+      return matchesSearch;
+    });
+  }, [formations, formationSearch]);
 
   function pushAdminLivePoint(nextOverview: Overview) {
     const point = {
@@ -180,18 +314,6 @@ export default function AdminDashboardPage() {
       revenus: Number(nextOverview.revenue.toFixed(2)),
     };
     setLivePoints((current) => [...current.slice(-11), point]);
-  }
-
-  async function updateRole(userId: number, role: Role) {
-    await apiPatch(`/api/admin/users/${userId}/role`, { role });
-    setUsers((current) => current.map((user) => user.id === userId ? { ...user, role } : user));
-    setMessage("Role utilisateur mis a jour.");
-  }
-
-  async function verifyUser(userId: number) {
-    await apiPatch(`/api/admin/users/${userId}/verify`, {});
-    setUsers((current) => current.map((user) => user.id === userId ? { ...user, emailVerified: true } : user));
-    setMessage("Utilisateur verifie.");
   }
 
   async function confirmSellerSubscription(userId: number) {
@@ -234,7 +356,7 @@ export default function AdminDashboardPage() {
           <div>
             <span className="badge">Administration</span>
             <h1 className="section-title mt-4">Espace admin</h1>
-            <p className="mt-2 text-stone-600">Controle global des comptes, commandes, plats et formations.</p>
+            <p className="mt-2 text-stone-600">Controle global des comptes, commandes, plats, formations et recettes.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-600">
@@ -333,20 +455,24 @@ export default function AdminDashboardPage() {
         ) : null}
 
         {!loading && tab === "users" ? (
-          <div className="card overflow-x-auto p-4">
+          <div className="grid gap-4">
+            <FilterInput
+              value={userSearch}
+              placeholder="Rechercher ou choisir un utilisateur..."
+              onChange={setUserSearch}
+              options={userNameOptions}
+              listId="user-name-options"
+            />
+            <div className="card overflow-x-auto p-4">
             <table className="w-full min-w-[1250px] text-left text-sm">
               <thead className="text-stone-500"><tr><th className="p-3">Nom</th><th className="p-3">Email</th><th className="p-3">Contact</th><th className="p-3">Role</th><th className="p-3">Verification</th><th className="p-3">Abonnement vendeur</th><th className="p-3">Actions</th></tr></thead>
               <tbody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.id} className="border-t border-stone-200">
                     <td className="p-3 font-semibold">{user.firstName} {user.lastName}</td>
                     <td className="p-3">{user.email}</td>
                     <td className="p-3">{user.phone || "-"}<br />{user.city || ""}</td>
-                    <td className="p-3">
-                      <select className="input py-2" value={user.role} onChange={(event) => updateRole(user.id, event.target.value as Role)}>
-                        {roles.map((role) => <option key={role}>{role}</option>)}
-                      </select>
-                    </td>
+                    <td className="p-3"><span className="badge-muted">{user.role}</span></td>
                     <td className="p-3">{user.emailVerified ? <span className="badge">Verifie</span> : <span className="badge-muted">Non verifie</span>}</td>
                     <td className="p-3">
                       <div className="max-w-xs space-y-2">
@@ -365,7 +491,9 @@ export default function AdminDashboardPage() {
                     </td>
                     <td className="p-3">
                       <div className="flex flex-wrap gap-2">
-                        {!user.emailVerified ? <button className="btn-secondary py-2" onClick={() => verifyUser(user.id)}>Verifier</button> : null}
+                        <Link href={`/admin/users/${user.id}`} className="btn-secondary py-2">
+                          Modifier
+                        </Link>
                         {user.sellerSubscriptionStatus === "PENDING" ? (
                           <button className="btn-primary py-2" onClick={() => confirmSellerSubscription(user.id)}>
                             Confirmer abonnement
@@ -381,33 +509,85 @@ export default function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
+          </div>
         ) : null}
 
         {!loading && tab === "orders" ? (
-          <AdminList items={orders.map((order) => ({
-            id: order.id,
-            title: `Commande #${order.id}`,
-            meta: `${order.client?.firstName ?? ""} ${order.client?.lastName ?? ""} - ${order.totalPrice.toFixed(2)} DT - ${order.status}`,
-            sub: `${order.paymentMethod} / ${order.paymentStatus}`,
-          }))} onDelete={(id) => remove(`/api/admin/orders/${id}`, () => setOrders((current) => current.filter((item) => item.id !== id)))} />
+          <div className="grid gap-4">
+            <FilterInput
+              value={orderSearch}
+              placeholder="Rechercher ou choisir un client..."
+              onChange={setOrderSearch}
+              options={orderClientOptions}
+              listId="order-client-options"
+            />
+            <AdminList items={filteredOrders.map((order) => ({
+              id: order.id,
+              title: `Commande #${order.id}`,
+              meta: `${order.client?.firstName ?? ""} ${order.client?.lastName ?? ""} - ${order.totalPrice.toFixed(2)} DT - ${order.status}`,
+              sub: `${order.paymentMethod} / ${order.paymentStatus}`,
+            }))} onDelete={(id) => remove(`/api/admin/orders/${id}`, () => setOrders((current) => current.filter((item) => item.id !== id)))} />
+          </div>
         ) : null}
 
         {!loading && tab === "dishes" ? (
-          <AdminList items={dishes.map((dish) => ({
-            id: dish.id,
-            title: dish.name,
-            meta: `${dish.price.toFixed(2)} DT - ${dish.city}`,
-            sub: `Vendeur: ${dish.seller?.firstName ?? ""} ${dish.seller?.lastName ?? ""}`,
-          }))} onDelete={(id) => remove(`/api/admin/dishes/${id}`, () => setDishes((current) => current.filter((item) => item.id !== id)))} />
+          <div className="grid gap-4">
+            <FilterInput
+              value={dishSearch}
+              placeholder="Rechercher ou choisir un vendeur..."
+              onChange={setDishSearch}
+              options={dishSellerOptions}
+              listId="dish-seller-options"
+            />
+            <AdminList items={filteredDishes.map((dish) => ({
+              id: dish.id,
+              title: dish.name,
+              meta: `${dish.price.toFixed(2)} DT - ${dish.city}`,
+              sub: `Vendeur: ${dish.seller?.firstName ?? ""} ${dish.seller?.lastName ?? ""}`,
+              imageUrl: dish.imageUrl,
+            }))} onDelete={(id) => remove(`/api/admin/dishes/${id}`, () => setDishes((current) => current.filter((item) => item.id !== id)))} />
+          </div>
         ) : null}
 
         {!loading && tab === "formations" ? (
-          <AdminList items={formations.map((formation) => ({
-            id: formation.id,
-            title: formation.title,
-            meta: `${formation.price.toFixed(2)} DT - ${formation.level || "Niveau libre"}`,
-            sub: `Vendeur: ${formation.seller?.firstName ?? ""} ${formation.seller?.lastName ?? ""}`,
-          }))} onDelete={(id) => remove(`/api/admin/formations/${id}`, () => setFormations((current) => current.filter((item) => item.id !== id)))} />
+          <div className="grid gap-4">
+            <FilterInput
+              value={formationSearch}
+              placeholder="Rechercher ou choisir un vendeur..."
+              onChange={setFormationSearch}
+              options={formationSellerOptions}
+              listId="formation-seller-options"
+            />
+            <AdminList items={filteredFormations.map((formation) => ({
+              id: formation.id,
+              title: formation.title,
+              meta: `${formation.price.toFixed(2)} DT - ${formation.level || "Niveau libre"}`,
+              sub: `Vendeur: ${formation.seller?.firstName ?? ""} ${formation.seller?.lastName ?? ""}`,
+              imageUrl: formation.imageUrl,
+            }))} onDelete={(id) => remove(`/api/admin/formations/${id}`, () => setFormations((current) => current.filter((item) => item.id !== id)))} />
+          </div>
+        ) : null}
+
+        {!loading && tab === "recipes" ? (
+          <div className="grid gap-4">
+            <div className="flex justify-end">
+              <Link href="/admin/recipes/new" className="btn-primary flex items-center gap-2">
+                <BookOpen size={18} />
+                Ajouter une recette
+              </Link>
+            </div>
+            <AdminList
+              items={recipes.map((recipe) => ({
+                id: recipe.id,
+                title: recipe.title,
+                meta: `${recipe.difficulty || "Difficulte libre"} - ${recipe.preparationTime || 0} min`,
+                sub: recipe.category?.name || "Sans categorie",
+                imageUrl: recipe.imageUrl,
+              }))}
+              getEditHref={(id) => `/admin/recipes/${id}`}
+              onDelete={(id) => remove(`/api/recipes/${id}`, () => setRecipes((current) => current.filter((item) => item.id !== id)))}
+            />
+          </div>
         ) : null}
 
         {!loading && tab === "support" ? (
@@ -497,17 +677,85 @@ function LiveChart({ title, data }: { title: string; data: LivePoint[] }) {
   );
 }
 
-function AdminList({ items, onDelete }: { items: Array<{ id: number; title: string; meta: string; sub: string }>; onDelete: (id: number) => void }) {
+function FilterInput({
+  value,
+  placeholder,
+  onChange,
+  options,
+  listId,
+}: {
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  options: string[];
+  listId: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const filteredOptions = options.filter((option) =>
+    !value.trim() ? true : option.toLowerCase().includes(value.trim().toLowerCase()),
+  );
+
+  return (
+    <div className="card p-4">
+      <input
+        className="input"
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => window.setTimeout(() => setFocused(false), 150)}
+      />
+      {focused && filteredOptions.length > 0 ? (
+        <div className="mt-3 max-h-56 overflow-y-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
+          {filteredOptions.map((option) => (
+            <button
+              key={`${listId}-${option}`}
+              type="button"
+              className="block w-full border-b border-stone-100 px-4 py-3 text-left text-sm text-stone-700 last:border-b-0 hover:bg-stone-50"
+              onMouseDown={() => onChange(option)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function AdminList({
+  items,
+  onDelete,
+  getEditHref,
+}: {
+  items: Array<{ id: number; title: string; meta: string; sub: string; imageUrl?: string | null }>;
+  onDelete: (id: number) => void;
+  getEditHref?: (id: number) => string;
+}) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {items.map((item) => (
         <div key={item.id} className="card p-5">
+          {item.imageUrl ? (
+            <img
+              src={item.imageUrl}
+              alt={item.title}
+              className="mb-4 h-48 w-full rounded-2xl object-cover"
+            />
+          ) : null}
           <h3 className="text-xl font-bold">{item.title}</h3>
           <p className="mt-2 text-sm font-semibold text-red-900">{item.meta}</p>
           <p className="mt-1 text-sm text-stone-600">{item.sub}</p>
-          <button className="btn-danger mt-5 flex items-center gap-2" onClick={() => onDelete(item.id)}>
-            <Trash2 size={16} /> Supprimer
-          </button>
+          <div className="mt-5 flex flex-wrap gap-3">
+            {getEditHref ? (
+              <Link href={getEditHref(item.id)} className="btn-secondary">
+                Modifier
+              </Link>
+            ) : null}
+            <button className="btn-danger flex items-center gap-2" onClick={() => onDelete(item.id)}>
+              <Trash2 size={16} /> Supprimer
+            </button>
+          </div>
         </div>
       ))}
       {items.length === 0 ? <div className="card p-8 text-center text-stone-600 md:col-span-2">Aucun element.</div> : null}

@@ -32,6 +32,9 @@ export default function LoginPage() {
     if (googleError === "google") {
       setError("Connexion Google impossible.");
     }
+    if (googleError === "google_config") {
+      setError("Connexion Google indisponible. Configurez GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET et GOOGLE_CALLBACK_URL dans le backend.");
+    }
   }, [router]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

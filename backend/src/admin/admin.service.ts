@@ -7,12 +7,17 @@ export class AdminService {
   constructor(private prisma: PrismaService) {}
 
   async overview() {
-    const [users, orders, dishes, formations, revenue] = await Promise.all([
+    const subscriptionAmount = Number(process.env.SELLER_SUBSCRIPTION_PRICE || 20);
+    const [users, orders, dishes, formations, activeSellerSubscriptions] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.order.count(),
       this.prisma.dish.count(),
       this.prisma.formation.count(),
-      this.prisma.order.aggregate({ _sum: { totalPrice: true } }),
+      this.prisma.user.count({
+        where: {
+          sellerSubscriptionStatus: 'ACTIVE',
+        },
+      }),
     ]);
 
     return {
@@ -20,7 +25,7 @@ export class AdminService {
       orders,
       dishes,
       formations,
-      revenue: revenue._sum.totalPrice ?? 0,
+      revenue: activeSellerSubscriptions * subscriptionAmount,
     };
   }
 
@@ -72,6 +77,44 @@ export class AdminService {
     return this.prisma.formation.findMany({
       include: { seller: { select: { id: true, firstName: true, lastName: true, email: true } } },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  updateUser(
+    id: number,
+    data: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      phone?: string | null;
+      city?: string | null;
+    },
+  ) {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        city: data.city,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        city: true,
+        role: true,
+        emailVerified: true,
+        sellerSubscriptionStatus: true,
+        sellerSubscriptionExpiresAt: true,
+        sellerSubscriptionReference: true,
+        sellerSubscriptionProof: true,
+        sellerD17PhoneNumber: true,
+        createdAt: true,
+      },
     });
   }
 

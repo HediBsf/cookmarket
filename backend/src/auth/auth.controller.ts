@@ -17,7 +17,13 @@ export class AuthController {
 
   @Get('google')
   google(@Res() res: any) {
-    return res.redirect(this.authService.getGoogleAuthUrl());
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    try {
+      return res.redirect(this.authService.getGoogleAuthUrl());
+    } catch {
+      return res.redirect(`${frontendUrl}/login?error=google_config`);
+    }
   }
 
   @Get('verify-email')

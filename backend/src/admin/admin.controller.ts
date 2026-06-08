@@ -27,6 +27,16 @@ export class AdminController {
     return this.service.users();
   }
 
+  @Patch('users/:id')
+  updateUser(
+    @Param('id') id: string,
+    @Body() body: { firstName?: string; lastName?: string; email?: string; phone?: string | null; city?: string | null },
+    @Req() req: AuthRequest,
+  ) {
+    this.ensureAdmin(req);
+    return this.service.updateUser(Number(id), body);
+  }
+
   @Get('orders')
   orders(@Req() req: AuthRequest) {
     this.ensureAdmin(req);

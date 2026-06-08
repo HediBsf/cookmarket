@@ -101,6 +101,7 @@ async function main() {
     update: {
       firstName: 'ChanebPlusSahloul',
       lastName: ' ',
+      password,
       role: Role.SELLER,
       city: 'Sahloul',
       phone: '+216 00 000 000',
@@ -127,6 +128,7 @@ async function main() {
     update: {
       firstName: 'Omek',
       lastName: 'Houria',
+      password,
       role: Role.SELLER,
       city: 'Sousse',
       phone: '+216 00 000 001',
@@ -153,6 +155,7 @@ async function main() {
     update: {
       firstName: 'Admin',
       lastName: 'CookMarket',
+      password,
       role: Role.ADMIN,
       emailVerified: true,
     },
@@ -171,6 +174,7 @@ async function main() {
     update: {
       firstName: 'Maryem',
       lastName: 'Turki',
+      password,
       role: Role.CLIENT,
       city: 'Sousse',
       emailVerified: true,
