@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, CheckCircle, ClipboardList, GraduationCap, Plus, RefreshCw, Soup, Trash2, Wifi } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -92,29 +93,6 @@ type SellerNotification = {
   createdAt: string;
 };
 
-const emptyDish = {
-  name: "",
-  description: "",
-  price: "",
-  imageUrl: "",
-  quantity: "1",
-  city: "",
-  allergens: "",
-  preparationTime: "",
-  categoryId: "",
-  availability: true,
-};
-
-const emptyFormation = {
-  title: "",
-  description: "",
-  price: "",
-  duration: "",
-  level: "",
-  imageUrl: "",
-  availability: true,
-};
-
 const statuses: OrderStatus[] = ["PENDING", "ACCEPTED", "PREPARING", "READY", "DELIVERING", "DELIVERED", "CANCELLED"];
 
 export default function SellerDashboardPage() {
@@ -122,10 +100,6 @@ export default function SellerDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [formations, setFormations] = useState<Formation[]>([]);
-  const [dishForm, setDishForm] = useState(emptyDish);
-  const [formationForm, setFormationForm] = useState(emptyFormation);
-  const [editingDishId, setEditingDishId] = useState<number | null>(null);
-  const [editingFormationId, setEditingFormationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
@@ -284,42 +258,6 @@ export default function SellerDashboardPage() {
     setMessage("Paiement D17 confirme. La commande est acceptee.");
   }
 
-  async function saveDish(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const payload = {
-      ...dishForm,
-      price: Number(dishForm.price),
-      quantity: Number(dishForm.quantity),
-      preparationTime: dishForm.preparationTime ? Number(dishForm.preparationTime) : undefined,
-      categoryId: dishForm.categoryId ? Number(dishForm.categoryId) : undefined,
-    };
-    if (editingDishId) {
-      await apiPatch(`/api/dishes/${editingDishId}`, payload);
-      setMessage("Plat modifié avec succès.");
-    } else {
-      await apiPost("/api/dishes", payload);
-      setMessage("Plat ajouté avec succès.");
-    }
-    setDishForm(emptyDish);
-    setEditingDishId(null);
-    await loadData();
-  }
-
-  async function saveFormation(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const payload = { ...formationForm, price: Number(formationForm.price) };
-    if (editingFormationId) {
-      await apiPatch(`/api/formations/${editingFormationId}`, payload);
-      setMessage("Formation modifiée avec succès.");
-    } else {
-      await apiPost("/api/formations", payload);
-      setMessage("Formation ajoutée avec succès.");
-    }
-    setFormationForm(emptyFormation);
-    setEditingFormationId(null);
-    await loadData();
-  }
-
   async function deleteDish(id: number) {
     if (!window.confirm("Supprimer ce plat ?")) return;
     await apiDelete(`/api/dishes/${id}`);
@@ -332,35 +270,6 @@ export default function SellerDashboardPage() {
     await apiDelete(`/api/formations/${id}`);
     setMessage("Formation supprimée.");
     await loadData();
-  }
-
-  function editDish(dish: Dish) {
-    setEditingDishId(dish.id);
-    setDishForm({
-      name: dish.name,
-      description: dish.description,
-      price: String(dish.price),
-      imageUrl: dish.imageUrl ?? "",
-      quantity: String(dish.quantity),
-      city: dish.city,
-      allergens: dish.allergens ?? "",
-      preparationTime: dish.preparationTime ? String(dish.preparationTime) : "",
-      categoryId: dish.categoryId ? String(dish.categoryId) : "",
-      availability: dish.availability,
-    });
-  }
-
-  function editFormation(formation: Formation) {
-    setEditingFormationId(formation.id);
-    setFormationForm({
-      title: formation.title,
-      description: formation.description,
-      price: String(formation.price),
-      duration: formation.duration ?? "",
-      level: formation.level ?? "",
-      imageUrl: formation.imageUrl ?? "",
-      availability: formation.availability,
-    });
   }
 
   return (
@@ -523,17 +432,33 @@ export default function SellerDashboardPage() {
         ) : null}
 
         {tab === "dishes" ? (
-          <CrudSection title="Mes plats" onSubmit={saveDish} submitLabel={editingDishId ? "Modifier le plat" : "Ajouter le plat"}>
-            <DishForm form={dishForm} setForm={setDishForm} />
-            <ItemGrid items={dishes} onEdit={editDish} onDelete={deleteDish} titleKey="name" />
-          </CrudSection>
+          <section className="grid gap-6">
+            <div className="card flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Mes plats</h2>
+                <p className="mt-2 text-sm text-stone-600">Ajoutez un nouveau plat depuis une page dediee.</p>
+              </div>
+              <Link href="/seller/dishes/new" className="btn-primary">
+                Ajouter un plat
+              </Link>
+            </div>
+            <ItemGrid items={dishes} onDelete={deleteDish} titleKey="name" getEditHref={(dish) => `/seller/dishes/${dish.id}`} />
+          </section>
         ) : null}
 
         {tab === "formations" ? (
-          <CrudSection title="Mes formations" onSubmit={saveFormation} submitLabel={editingFormationId ? "Modifier la formation" : "Ajouter la formation"}>
-            <FormationForm form={formationForm} setForm={setFormationForm} />
-            <ItemGrid items={formations} onEdit={editFormation} onDelete={deleteFormation} titleKey="title" />
-          </CrudSection>
+          <section className="grid gap-6">
+            <div className="card flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Mes formations</h2>
+                <p className="mt-2 text-sm text-stone-600">Ajoutez une nouvelle formation depuis une page dediee.</p>
+              </div>
+              <Link href="/seller/formations/new" className="btn-primary">
+                Ajouter une formation
+              </Link>
+            </div>
+            <ItemGrid items={formations} onDelete={deleteFormation} titleKey="title" getEditHref={(formation) => 																				`/seller/formations/${formation.id}`} />
+          </section>
         ) : null}
         </>
         )}
@@ -655,14 +580,7 @@ function CrudSection({ title, onSubmit, submitLabel, children }: { title: string
   return <div className="grid gap-6 lg:grid-cols-[420px_1fr]"><form onSubmit={onSubmit} className="card h-fit p-6"><h2 className="mb-5 flex items-center gap-2 text-2xl font-bold"><Plus size={20} /> {title}</h2>{childArray[0]}<button className="btn-primary mt-5 w-full">{submitLabel}</button></form><div>{childArray[1]}</div></div>;
 }
 
-function DishForm({ form, setForm }: { form: typeof emptyDish; setForm: (value: typeof emptyDish) => void }) {
-  return <div className="grid gap-3"><input className="input" placeholder="Nom" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /><textarea className="input min-h-24" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /><input className="input" placeholder="Prix" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><input className="input" placeholder="Image URL" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} /><input className="input" placeholder="Quantité" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} /><input className="input" placeholder="Ville" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /><input className="input" placeholder="Allergènes" value={form.allergens} onChange={(e) => setForm({ ...form, allergens: e.target.value })} /><input className="input" placeholder="Temps de préparation (min)" value={form.preparationTime} onChange={(e) => setForm({ ...form, preparationTime: e.target.value })} /><input className="input" placeholder="Category ID" value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} /><label className="flex gap-2 text-sm"><input type="checkbox" checked={form.availability} onChange={(e) => setForm({ ...form, availability: e.target.checked })} /> Disponible</label></div>;
-}
 
-function FormationForm({ form, setForm }: { form: typeof emptyFormation; setForm: (value: typeof emptyFormation) => void }) {
-  return <div className="grid gap-3"><input className="input" placeholder="Titre" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /><textarea className="input min-h-24" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /><input className="input" placeholder="Prix" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><input className="input" placeholder="Durée" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} /><input className="input" placeholder="Niveau" value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} /><input className="input" placeholder="Image URL" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} /><label className="flex gap-2 text-sm"><input type="checkbox" checked={form.availability} onChange={(e) => setForm({ ...form, availability: e.target.checked })} /> Disponible</label></div>;
-}
-
-function ItemGrid<T extends { id: number; description: string; price: number; availability: boolean }>({ items, onEdit, onDelete, titleKey }: { items: T[]; onEdit: (item: T) => void; onDelete: (id: number) => void; titleKey: keyof T }) {
-  return <div className="grid gap-4 md:grid-cols-2">{items.map((item) => <div key={item.id} className="card p-5"><div className="flex items-start justify-between gap-3"><div><span className={item.availability ? "badge" : "badge-muted"}>{item.availability ? "Actif" : "Inactif"}</span><h3 className="mt-3 text-xl font-bold">{String(item[titleKey])}</h3><p className="mt-2 line-clamp-2 text-sm text-stone-600">{item.description}</p><p className="mt-3 font-extrabold text-red-900">{item.price} DT</p></div></div><div className="mt-5 flex gap-2"><button className="btn-secondary py-2" onClick={() => onEdit(item)}>Modifier</button><button className="btn-danger flex items-center gap-2" onClick={() => onDelete(item.id)}><Trash2 size={16} />Supprimer</button></div></div>)}</div>;
+function ItemGrid<T extends { id: number; description: string; price: number; availability: boolean; imageUrl?: string }>({ items, onEdit, onDelete, titleKey, getEditHref }: { items: T[]; onEdit?: (item: T) => void; onDelete: (id: number) => void; titleKey: keyof T; getEditHref?: (item: T) => string }) {
+  return <div className="grid gap-4 md:grid-cols-2">{items.map((item) => <div key={item.id} className="card overflow-hidden p-5">{item.imageUrl ? <img src={item.imageUrl} alt={String(item[titleKey])} className="mb-5 h-44 w-full rounded-2xl object-cover" /> : null}<div className="flex items-start justify-between gap-3"><div><span className={item.availability ? "badge" : "badge-muted"}>{item.availability ? "Actif" : "Inactif"}</span><h3 className="mt-3 text-xl font-bold">{String(item[titleKey])}</h3><p className="mt-2 line-clamp-2 text-sm text-stone-600">{item.description}</p><p className="mt-3 font-extrabold text-red-900">{item.price} DT</p></div></div><div className="mt-5 flex gap-2">{getEditHref ? <Link className="btn-secondary py-2" href={getEditHref(item)}>Modifier</Link> : onEdit ? <button className="btn-secondary py-2" onClick={() => onEdit(item)}>Modifier</button> : null}<button className="btn-danger flex items-center gap-2" onClick={() => onDelete(item.id)}><Trash2 size={16} />Supprimer</button></div></div>)}</div>;
 }
