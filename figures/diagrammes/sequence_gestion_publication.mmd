@@ -1,0 +1,98 @@
+%%{init: {"sequence":{"mirrorActors":false},"theme":"base","themeVariables":{"fontFamily":"Arial","actorBkg":"#ffffff","actorBorder":"#000000","actorTextColor":"#000000","activationBkgColor":"#ffffff","activationBorderColor":"#000000","lineColor":"#000000","textColor":"#000000","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#000000","labelTextColor":"#000000","signalColor":"#000000","signalTextColor":"#000000","noteBkgColor":"#ffffff","noteBorderColor":"#000000"},"themeCSS":".actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor.actor-bottom { display: none !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$=\"-arrowhead\"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }"}}%%
+sequenceDiagram
+    title Diagramme de sequence - Gestion des publications
+    participant Vendeur as Vendeur
+    participant Frontend as Tableau de bord vendeur
+    participant API as API plats et formations
+    participant Service as Service plats et formations
+    participant DB as Base de donnees
+
+    Vendeur->>Frontend: Acceder a la gestion des publications
+    activate Frontend
+    Frontend->>API: GET /dishes/seller/:sellerId ou /formations/seller/:sellerId
+    activate API
+    API->>Service: findBySeller(sellerId)
+    activate Service
+    Service->>DB: Lire les publications du vendeur
+    activate DB
+    DB-->>Service: Liste des publications
+    deactivate DB
+    Service-->>API: Resultat
+    deactivate Service
+    API-->>Frontend: Liste des publications
+    deactivate API
+    Frontend-->>Vendeur: Afficher les plats et formations
+
+    alt modification d'une publication
+        Vendeur->>Frontend: Selectionner une publication
+        Vendeur->>Frontend: Modifier les informations
+        Frontend->Frontend: Verifier les champs obligatoires
+        activate Frontend
+        deactivate Frontend
+
+        alt donnees valides
+            Frontend->>API: PATCH /dishes/:id ou /formations/:id
+            activate API
+            API->>Service: update(id, data)
+            activate Service
+            Service->>DB: Mettre a jour la publication
+            activate DB
+            DB-->>Service: Publication mise a jour
+            deactivate DB
+            Service-->>API: Succes
+            deactivate Service
+            API-->>Frontend: Confirmation
+            deactivate API
+            Frontend-->>Vendeur: Afficher un message de succes
+        else donnees invalides
+            Frontend-->>Vendeur: Afficher un message d'erreur
+        end
+
+    else suppression d'une publication
+        Vendeur->>Frontend: Selectionner une publication
+        Vendeur->>Frontend: Confirmer la suppression
+        Frontend->>API: DELETE /dishes/:id ou /formations/:id
+        activate API
+        API->>Service: delete(id)
+        activate Service
+        Service->>DB: Supprimer la publication
+        activate DB
+        DB-->>Service: Suppression effectuee
+        deactivate DB
+        Service-->>API: Succes
+        deactivate Service
+        API-->>Frontend: Confirmation
+        deactivate API
+        Frontend-->>Vendeur: Afficher un message de succes
+
+    else changement de disponibilite
+        Vendeur->>Frontend: Activer ou desactiver la publication
+        Frontend->>API: PATCH /dishes/:id ou /formations/:id
+        activate API
+        API->>Service: update(id, data)
+        activate Service
+        Service->>DB: Mettre a jour la disponibilite
+        activate DB
+        DB-->>Service: Disponibilite mise a jour
+        deactivate DB
+        Service-->>API: Succes
+        deactivate Service
+        API-->>Frontend: Confirmation
+        deactivate API
+        Frontend-->>Vendeur: Afficher un message de succes
+    end
+
+    Frontend->>API: GET /dishes/seller/:sellerId ou /formations/seller/:sellerId
+    activate API
+    API->>Service: findBySeller(sellerId)
+    activate Service
+    Service->>DB: Lire les publications actualisees
+    activate DB
+    DB-->>Service: Liste mise a jour
+    deactivate DB
+    Service-->>API: Resultat
+    deactivate Service
+    API-->>Frontend: Liste actualisee
+    deactivate API
+    Frontend-->>Vendeur: Rafraichir l'affichage
+    deactivate Frontend

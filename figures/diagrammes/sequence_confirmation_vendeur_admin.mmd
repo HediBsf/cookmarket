@@ -1,0 +1,40 @@
+%%{init: {'sequence': {'mirrorActors': false}, 'theme': 'base', 'themeVariables': {'fontFamily': 'Arial', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000', 'lineColor': '#000000', 'textColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000'}, 'themeCSS': '.actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$="-arrowhead"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }'}}%%
+sequenceDiagram
+    title Diagramme de séquence - Confirmation vendeur par l'administrateur
+    participant Administrateur as Administrateur
+    participant Frontend as Tableau de bord administrateur
+    participant AdminController as Controleur admin
+    participant AdminService as Service admin
+    participant DB as Base de donnees
+
+    Administrateur->>Frontend: Ouvrir la gestion des utilisateurs
+    activate Frontend
+    Frontend->>AdminController: GET /admin/users
+    activate AdminController
+    AdminController->>AdminService: utilisateurs()
+    activate AdminService
+    AdminService->>DB: Lire les utilisateurs et demandes vendeur
+    activate DB
+    DB-->>AdminService: Liste des utilisateurs
+    deactivate DB
+    AdminService-->>AdminController: Resultat
+    deactivate AdminService
+    AdminController-->>Frontend: Liste des comptes
+    deactivate AdminController
+    Frontend-->>Administrateur: Afficher les demandes en attente
+
+    Administrateur->>Frontend: Confirmer une demande vendeur
+    Frontend->>AdminController: PATCH /admin/users/:id/confirm-seller-subscription
+    activate AdminController
+    AdminController->>AdminService: confirmerAbonnementVendeur(id)
+    activate AdminService
+    AdminService->>DB: Mettre a jour role et statut vendeur
+    activate DB
+    DB-->>AdminService: Utilisateur mis a jour
+    deactivate DB
+    AdminService-->>AdminController: Confirmation
+    deactivate AdminService
+    AdminController-->>Frontend: Reponse de succes
+    deactivate AdminController
+    Frontend-->>Administrateur: Afficher le statut vendeur confirme
+    deactivate Frontend

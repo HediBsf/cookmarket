@@ -1,0 +1,57 @@
+%%{init: {'sequence': {'mirrorActors': false}, 'theme': 'base', 'themeVariables': {'fontFamily': 'Arial', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000', 'lineColor': '#000000', 'textColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000'}, 'themeCSS': '.actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$="-arrowhead"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }'}}%%
+sequenceDiagram
+    title Diagramme de séquence - Gestion des contenus administrateur
+    participant Administrateur as Administrateur
+    participant Frontend as Tableau de bord administrateur
+    participant AdminController as Controleur admin
+    participant AdminService as Service admin
+    participant DB as Base de donnees
+
+    Administrateur->>Frontend: Acceder a la gestion des contenus
+    activate Frontend
+    Frontend->>AdminController: GET /admin/dishes et /admin/formations
+    activate AdminController
+    AdminController->>AdminService: plats() et formations()
+    activate AdminService
+    AdminService->>DB: Lire les plats et les formations
+    activate DB
+    DB-->>AdminService: Listes des contenus
+    deactivate DB
+    AdminService-->>AdminController: Resultats
+    deactivate AdminService
+    AdminController-->>Frontend: Donnees des contenus
+    deactivate AdminController
+    Frontend-->>Administrateur: Afficher les plats et les formations
+
+    alt suppression d'un plat
+        Administrateur->>Frontend: Supprimer un plat
+        Frontend->>AdminController: DELETE /admin/dishes/:id
+        activate AdminController
+        AdminController->>AdminService: supprimerPlat(id)
+        activate AdminService
+        AdminService->>DB: Supprimer le plat
+        activate DB
+        DB-->>AdminService: Suppression effectuee
+        deactivate DB
+        AdminService-->>AdminController: Confirmation
+        deactivate AdminService
+        AdminController-->>Frontend: Reponse de succes
+        deactivate AdminController
+        Frontend-->>Administrateur: Afficher un message de succes
+    else suppression d'une formation
+        Administrateur->>Frontend: Supprimer une formation
+        Frontend->>AdminController: DELETE /admin/formations/:id
+        activate AdminController
+        AdminController->>AdminService: supprimerFormation(id)
+        activate AdminService
+        AdminService->>DB: Supprimer la formation
+        activate DB
+        DB-->>AdminService: Suppression effectuee
+        deactivate DB
+        AdminService-->>AdminController: Confirmation
+        deactivate AdminService
+        AdminController-->>Frontend: Reponse de succes
+        deactivate AdminController
+        Frontend-->>Administrateur: Afficher un message de succes
+    end
+    deactivate Frontend

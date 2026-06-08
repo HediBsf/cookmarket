@@ -1,0 +1,36 @@
+%%{init: {'sequence': {'mirrorActors': false}, 'theme': 'base', 'themeVariables': {'fontFamily': 'Arial', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000', 'lineColor': '#000000', 'textColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000'}, 'themeCSS': '.actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$="-arrowhead"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }'}}%%
+sequenceDiagram
+    title Diagramme de séquence - Demande d'activation vendeur
+    participant Client as Client
+    participant Frontend as Interface activation vendeur
+    participant UsersController as Controleur utilisateurs
+    participant UsersService as Service utilisateurs
+    participant DB as Base de donnees
+
+    Client->>Frontend: Ouvrir la demande d'activation vendeur
+    activate Frontend
+    Frontend-->>Client: Afficher le formulaire D17
+    Client->>Frontend: Saisir le numero D17, la reference et la preuve
+    Client->>Frontend: Envoyer la demande
+    Frontend->Frontend: Verifier les champs obligatoires
+    activate Frontend
+    deactivate Frontend
+
+    alt donnees valides
+        Frontend->>UsersController: POST /users/me/seller-subscription
+        activate UsersController
+        UsersController->>UsersService: envoyerPaiementAbonnementVendeur(donnees, idUtilisateur)
+        activate UsersService
+        UsersService->>DB: Enregistrer la demande avec statut PENDING
+        activate DB
+        DB-->>UsersService: Demande enregistree
+        deactivate DB
+        UsersService-->>UsersController: Confirmation
+        deactivate UsersService
+        UsersController-->>Frontend: Reponse de succes
+        deactivate UsersController
+        Frontend-->>Client: Afficher demande envoyee
+    else donnees invalides
+        Frontend-->>Client: Afficher un message d'erreur
+    end
+    deactivate Frontend

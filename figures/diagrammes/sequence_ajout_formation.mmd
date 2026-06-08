@@ -1,0 +1,39 @@
+%%{init: {"sequence":{"mirrorActors":false},"theme":"base","themeVariables":{"fontFamily":"Arial","actorBkg":"#ffffff","actorBorder":"#000000","actorTextColor":"#000000","activationBkgColor":"#ffffff","activationBorderColor":"#000000","lineColor":"#000000","textColor":"#000000","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#000000","labelTextColor":"#000000","signalColor":"#000000","signalTextColor":"#000000","noteBkgColor":"#ffffff","noteBorderColor":"#000000"},"themeCSS":".actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor.actor-bottom { display: none !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$=\"-arrowhead\"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }"}}%%
+sequenceDiagram
+    title Diagramme de sequence - Ajout d'une formation
+    participant Vendeur as Vendeur
+    participant Frontend as Tableau de bord vendeur
+    participant FormationsController as Controleur des formations
+    participant FormationsService as Service des formations
+    participant DB as Base de donnees
+
+    Vendeur->>Frontend: Ouvrir le formulaire d'ajout d'une formation
+    activate Frontend
+    Frontend-->>Vendeur: Afficher le formulaire
+    deactivate Frontend
+
+    Vendeur->>Frontend: Saisir les informations de la formation
+    Vendeur->>Frontend: Valider l'ajout
+    activate Frontend
+    Frontend->Frontend: Verifier les champs obligatoires
+    activate Frontend
+    deactivate Frontend
+
+    alt donnees valides
+        Frontend->>FormationsController: POST /formations
+        activate FormationsController
+        FormationsController->>FormationsService: creer(donnees, idVendeur)
+        activate FormationsService
+        FormationsService->>DB: Enregistrer la formation
+        activate DB
+        DB-->>FormationsService: Formation creee
+        deactivate DB
+        FormationsService-->>FormationsController: Formation creee
+        deactivate FormationsService
+        FormationsController-->>Frontend: Confirmation
+        deactivate FormationsController
+        Frontend-->>Vendeur: Afficher un message de succes
+    else donnees invalides
+        Frontend-->>Vendeur: Afficher un message d'erreur
+    end
+    deactivate Frontend

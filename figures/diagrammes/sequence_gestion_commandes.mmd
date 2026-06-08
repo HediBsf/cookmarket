@@ -1,0 +1,75 @@
+%%{init: {'sequence': {'mirrorActors': false}, 'theme': 'base', 'themeVariables': {'fontFamily': 'Arial', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000', 'lineColor': '#000000', 'textColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000'}, 'themeCSS': '.actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$="-arrowhead"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }'}}%%
+sequenceDiagram
+    title Diagramme de séquence - Gestion des commandes vendeur
+    participant Vendeur as Vendeur
+    participant Frontend as Tableau de bord vendeur
+    participant OrdersController as Controleur des commandes
+    participant OrdersService as Service des commandes
+    participant DB as Base de donnees
+
+    Vendeur->>Frontend: Acceder a la gestion des commandes
+    activate Frontend
+    Frontend->>OrdersController: GET /orders/seller/:sellerId
+    activate OrdersController
+    OrdersController->>OrdersService: chercherParVendeur(idVendeur)
+    activate OrdersService
+    OrdersService->>DB: Lire les commandes du vendeur
+    activate DB
+    DB-->>OrdersService: Liste des commandes
+    deactivate DB
+    OrdersService-->>OrdersController: Resultat
+    deactivate OrdersService
+    OrdersController-->>Frontend: Liste des commandes
+    deactivate OrdersController
+    Frontend-->>Vendeur: Afficher les commandes recues
+    deactivate Frontend
+
+    Vendeur->>Frontend: Selectionner une commande
+    activate Frontend
+    Frontend->>OrdersController: GET /orders/:id
+    activate OrdersController
+    OrdersController->>OrdersService: chercherUneCommande(idCommande)
+    activate OrdersService
+    OrdersService->>DB: Lire le detail de la commande
+    activate DB
+    DB-->>OrdersService: Details de la commande
+    deactivate DB
+    OrdersService-->>OrdersController: Resultat
+    deactivate OrdersService
+    OrdersController-->>Frontend: Detail de la commande
+    deactivate OrdersController
+    Frontend-->>Vendeur: Afficher le detail de la commande
+    deactivate Frontend
+
+    Vendeur->>Frontend: Choisir un nouvel etat
+    activate Frontend
+    Frontend->>OrdersController: PATCH /orders/:id
+    activate OrdersController
+    OrdersController->>OrdersService: mettreAJourStatut(idCommande, statut, idVendeur)
+    activate OrdersService
+    OrdersService->>DB: Mettre a jour l'etat de la commande
+    activate DB
+    DB-->>OrdersService: Commande mise a jour
+    deactivate DB
+    OrdersService-->>OrdersController: Succes
+    deactivate OrdersService
+    OrdersController-->>Frontend: Confirmation
+    deactivate OrdersController
+    Frontend-->>Vendeur: Afficher le nouveau statut
+    deactivate Frontend
+
+    Frontend->>OrdersController: GET /orders/seller/:sellerId
+    activate Frontend
+    activate OrdersController
+    OrdersController->>OrdersService: chercherParVendeur(idVendeur)
+    activate OrdersService
+    OrdersService->>DB: Lire les commandes actualisees
+    activate DB
+    DB-->>OrdersService: Liste mise a jour
+    deactivate DB
+    OrdersService-->>OrdersController: Resultat
+    deactivate OrdersService
+    OrdersController-->>Frontend: Liste actualisee
+    deactivate OrdersController
+    Frontend-->>Vendeur: Rafraichir l'affichage des commandes
+    deactivate Frontend

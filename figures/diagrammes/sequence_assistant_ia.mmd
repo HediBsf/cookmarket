@@ -1,0 +1,35 @@
+%%{init: {'sequence': {'mirrorActors': false}, 'theme': 'base', 'themeVariables': {'fontFamily': 'Arial', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000', 'lineColor': '#000000', 'textColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000'}, 'themeCSS': '.actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$="-arrowhead"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }'}}%%
+sequenceDiagram
+    title Diagramme de séquence - Assistant intelligent
+    participant Client as Client
+    participant Frontend as Lamma IA
+    participant AiController as Controleur IA
+    participant AiService as Service IA
+    participant Ollama as Ollama
+
+    Client->>Frontend: Ouvrir l'assistant intelligent
+    activate Frontend
+    Frontend-->>Client: Afficher l'interface de chat
+    Client->>Frontend: Saisir une question
+    Frontend->>AiController: POST /ai/chat
+    activate AiController
+    AiController->>AiService: discuter(message)
+    activate AiService
+    AiService->>Ollama: Envoyer la requete au modele Llama
+    activate Ollama
+
+    alt reponse disponible
+        Ollama-->>AiService: Reponse generee
+        AiService-->>AiController: Reponse
+        AiController-->>Frontend: Reponse du chatbot
+        Frontend-->>Client: Afficher la reponse
+    else service indisponible
+        Ollama-->>AiService: Erreur ou timeout
+        AiService-->>AiController: Message d'erreur
+        AiController-->>Frontend: Echec de la requete
+        Frontend-->>Client: Afficher un message d'erreur
+    end
+    deactivate Ollama
+    deactivate AiService
+    deactivate AiController
+    deactivate Frontend

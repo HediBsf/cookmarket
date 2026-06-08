@@ -1,0 +1,59 @@
+%%{init: {"sequence":{"mirrorActors":false},"theme":"base","themeVariables":{"fontFamily":"Arial","actorBkg":"#ffffff","actorBorder":"#000000","actorTextColor":"#000000","activationBkgColor":"#ffffff","activationBorderColor":"#000000","lineColor":"#000000","textColor":"#000000","labelBoxBkgColor":"#ffffff","labelBoxBorderColor":"#000000","labelTextColor":"#000000","signalColor":"#000000","signalTextColor":"#000000","noteBkgColor":"#ffffff","noteBorderColor":"#000000"},"themeCSS":".actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor.actor-bottom { display: none !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$=\"-arrowhead\"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }"}}%%
+sequenceDiagram
+    title Diagramme de sequence - Confirmation du paiement D17
+    participant Vendeur as Vendeur
+    participant Frontend as Tableau de bord vendeur
+    participant OrdersController as Controleur des commandes
+    participant OrdersService as Service des commandes
+    participant DB as Base de donnees
+
+    Vendeur->>Frontend: Acceder a la gestion des commandes
+    activate Frontend
+    Frontend->>OrdersController: GET /orders/seller/:sellerId
+    activate OrdersController
+    OrdersController->>OrdersService: findBySeller(sellerId)
+    activate OrdersService
+    OrdersService->>DB: Lire les commandes du vendeur
+    activate DB
+    DB-->>OrdersService: Liste des commandes
+    deactivate DB
+    OrdersService-->>OrdersController: Resultat
+    deactivate OrdersService
+    OrdersController-->>Frontend: Liste des commandes
+    deactivate OrdersController
+    Frontend-->>Vendeur: Afficher les commandes recues
+
+    Vendeur->>Frontend: Selectionner une commande avec paiement D17
+    Frontend-->>Vendeur: Afficher la preuve de paiement D17
+    Vendeur->>Frontend: Confirmer la validite du paiement
+    Frontend->>OrdersController: PATCH /orders/:id/confirm-d17
+    activate OrdersController
+    OrdersController->>OrdersService: confirmD17Payment(orderId, sellerId)
+    activate OrdersService
+
+    alt preuve valide
+        OrdersService->>DB: Mettre a jour paymentStatus
+        activate DB
+        DB-->>OrdersService: Paiement confirme
+        deactivate DB
+        OrdersService-->>OrdersController: Succes
+        OrdersController-->>Frontend: Confirmation
+        Frontend-->>Vendeur: Afficher un message de succes
+
+        Frontend->>OrdersController: GET /orders/seller/:sellerId
+        OrdersController->>OrdersService: findBySeller(sellerId)
+        OrdersService->>DB: Lire les commandes actualisees
+        activate DB
+        DB-->>OrdersService: Liste mise a jour
+        deactivate DB
+        OrdersService-->>OrdersController: Resultat
+        OrdersController-->>Frontend: Liste actualisee
+        Frontend-->>Vendeur: Rafraichir l'affichage
+    else preuve invalide
+        OrdersService-->>OrdersController: Preuve invalide
+        OrdersController-->>Frontend: Message d'erreur
+        Frontend-->>Vendeur: Afficher un message d'erreur
+    end
+    deactivate OrdersService
+    deactivate OrdersController
+    deactivate Frontend

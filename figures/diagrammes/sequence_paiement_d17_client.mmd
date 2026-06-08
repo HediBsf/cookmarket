@@ -1,0 +1,36 @@
+%%{init: {'sequence': {'mirrorActors': false}, 'theme': 'base', 'themeVariables': {'fontFamily': 'Arial', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000', 'lineColor': '#000000', 'textColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000'}, 'themeCSS': '.actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$="-arrowhead"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }'}}%%
+sequenceDiagram
+    title Diagramme de séquence - Paiement D17 client
+    participant Client as Client
+    participant Frontend as Panier client
+    participant OrdersController as Controleur des commandes
+    participant OrdersService as Service des commandes
+    participant DB as Base de donnees
+
+    Client->>Frontend: Ouvrir une commande de formation
+    activate Frontend
+    Frontend-->>Client: Afficher le numero D17 du vendeur
+    Client->>Frontend: Saisir la reference D17 et ajouter la preuve
+    Client->>Frontend: Confirmer la commande
+    Frontend->Frontend: Verifier la reference et la capture
+    activate Frontend
+    deactivate Frontend
+
+    alt donnees valides
+        Frontend->>OrdersController: POST /orders
+        activate OrdersController
+        OrdersController->>OrdersService: creer(donnees, idClient)
+        activate OrdersService
+        OrdersService->>DB: Enregistrer la commande avec preuve D17
+        activate DB
+        DB-->>OrdersService: Commande creee
+        deactivate DB
+        OrdersService-->>OrdersController: Commande creee
+        deactivate OrdersService
+        OrdersController-->>Frontend: Confirmation
+        deactivate OrdersController
+        Frontend-->>Client: Afficher la commande en attente de confirmation vendeur
+    else donnees invalides
+        Frontend-->>Client: Afficher un message d'erreur
+    end
+    deactivate Frontend

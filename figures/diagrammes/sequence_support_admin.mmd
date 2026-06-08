@@ -1,0 +1,47 @@
+%%{init: {'sequence': {'mirrorActors': false}, 'theme': 'base', 'themeVariables': {'fontFamily': 'Arial', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000', 'lineColor': '#000000', 'textColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000'}, 'themeCSS': '.actor.actor-top { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .actor-line { stroke: #000 !important; stroke-dasharray: 6 4 !important; } .labelBox { rx: 0 !important; ry: 0 !important; fill: #fff !important; stroke: #000 !important; } .loopLine { stroke: #000 !important; stroke-dasharray: 0 !important; fill: none !important; } .messageLine0, .messageLine1, .innerArc { stroke: #000 !important; stroke-linecap: butt !important; stroke-linejoin: miter !important; } .activation0, .activation1, .activation2 { fill: #fff !important; stroke: #000 !important; } [id$="-arrowhead"] path { fill: #000 !important; stroke: #000 !important; } text, .messageText, .labelText, .loopText, .sectionTitle { fill: #000 !important; stroke: none !important; }'}}%%
+sequenceDiagram
+    title Diagramme de séquence - Traitement d'un ticket support
+    participant Administrateur as Administrateur
+    participant Frontend as Tableau de bord administrateur
+    participant AdminController as Controleur admin
+    participant AdminService as Service admin
+    participant DB as Base de donnees
+
+    Administrateur->>Frontend: Ouvrir les tickets support
+    activate Frontend
+    Frontend->>AdminController: GET /admin/support
+    activate AdminController
+    AdminController->>AdminService: ticketsSupport()
+    activate AdminService
+    AdminService->>DB: Lire les tickets support
+    activate DB
+    DB-->>AdminService: Liste des tickets
+    deactivate DB
+    AdminService-->>AdminController: Resultat
+    deactivate AdminService
+    AdminController-->>Frontend: Tickets support
+    deactivate AdminController
+    Frontend-->>Administrateur: Afficher les demandes d'aide
+
+    Administrateur->>Frontend: Rediger une reponse
+    Frontend->>AdminController: PATCH /admin/support/:id/reply
+    activate AdminController
+    AdminController->>AdminService: repondreTicketSupport(id, idAdmin, reponse)
+    activate AdminService
+
+    alt reponse valide
+        AdminService->>DB: Mettre a jour le ticket et creer une notification client
+        activate DB
+        DB-->>AdminService: Ticket mis a jour
+        deactivate DB
+        AdminService-->>AdminController: Confirmation
+        AdminController-->>Frontend: Reponse de succes
+        Frontend-->>Administrateur: Afficher ticket traite
+    else reponse invalide
+        AdminService-->>AdminController: Erreur de validation
+        AdminController-->>Frontend: Message d'erreur
+        Frontend-->>Administrateur: Afficher un message d'erreur
+    end
+    deactivate AdminService
+    deactivate AdminController
+    deactivate Frontend
