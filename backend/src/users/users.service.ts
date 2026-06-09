@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class UsersService {
@@ -194,6 +195,13 @@ export class UsersService {
       });
     }
 
+    await this.sendSupportTicketEmailToAdmin({
+      ticketId: ticket.id,
+      subject,
+      message,
+      requester: user,
+    });
+
     return { message: "Votre demande a ete envoyee a l'admin.", ticket };
   }
 
@@ -237,6 +245,65 @@ export class UsersService {
           message: notificationMessage,
         })),
       });
+    }
+  }
+
+  private async sendSupportTicketEmailToAdmin(data: {
+    ticketId: number;
+    subject: string;
+    message: string;
+    requester: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string | null;
+      city?: string | null;
+      role: Role;
+    };
+  }) {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = Number(process.env.SMTP_PORT || 587);
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const smtpFrom = process.env.SMTP_FROM || smtpUser;
+
+    if (!adminEmail || !smtpHost || !smtpUser || !smtpPass || !smtpFrom) {
+      console.warn('Email admin non envoye: configuration SMTP incomplete');
+      return;
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
+
+    try {
+      await transporter.sendMail({
+        from: smtpFrom,
+        to: adminEmail,
+        subject: `Nouveau ticket support #${data.ticketId} - ${data.subject}`,
+        text: [
+          `Un nouveau ticket support a ete envoye.`,
+          ``,
+          `Ticket: #${data.ticketId}`,
+          `Sujet: ${data.subject}`,
+          `Message: ${data.message}`,
+          ``,
+          `Utilisateur: ${data.requester.firstName} ${data.requester.lastName}`,
+          `Email: ${data.requester.email}`,
+          `Telephone: ${data.requester.phone || 'Non renseigne'}`,
+          `Ville: ${data.requester.city || 'Non renseignee'}`,
+          `Role: ${data.requester.role}`,
+        ].join('\n'),
+      });
+    } catch (error) {
+      console.error('Erreur envoi email ticket support admin', error);
     }
   }
 }
